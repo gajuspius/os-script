@@ -6,6 +6,12 @@ import sys
 import keystoneclient.v2_0.client as ksclient
 import glanceclient.v2.client as glclient
 from novaclient import client
+from datetime import datetime
+
+
+##
+#Max old snapshot count
+snap_max = 2
 
 def get_keystone_creds():
     try:
@@ -47,7 +53,8 @@ servers = nova.servers.list()
 def get_servers_list():
     uid_server = []
     for server in servers:
-        uid_server.append(server.id)
+        if (server.image != ""):
+            uid_server.append(server.id)
 
     return uid_server
 
@@ -64,8 +71,12 @@ def get_servers_snap_list(server_uuid):
 
     snaps.sort(key=lambda a: a['created'])
     return snaps
- 
 
+def get_new_snap_name(server_uuid):
+    srv_name = nova.servers.find(id=server_uuid)
+    snap_name = "snap_" + srv_name.name + "_" + datetime.now().strftime('%d%m%Y-%H%M%S')
+    return snap_name
+    
 
 def main(argv):
     uuids = get_servers_list()
@@ -74,8 +85,8 @@ def main(argv):
 	snapshots = get_servers_snap_list(uuid)
 	c = len(snapshots)
 
-	
-        print "server:" +  uuid 
+	##
+	#remove old snapshots
 	for x in snapshots:
 	    if x['order'] > 2:
  	        print 'Delete ' + x['id'] + ' - ' + x['created']
@@ -84,17 +95,18 @@ def main(argv):
             	    glance.images.delete(x['id'])
         	except HTTPNotFound:
             	    print "Could not find image " + img
-	    else:
-	        print x['id'] + ' - ' + x['created']
+	
+	##
+	#Create new snapshot
+	s_name = get_new_snap_name(uuid)
+        print "Server:" + uuid + "snapshot. name:" + s_name
 
-	print "\n"
 	   
-    srv = nova.servers.find(id="06e7e1a5-c29a-4d30-b8b5-0c5bd8af2ee6")
-    srv.create_image("snap_vm_022_05052016")
-    print srv
-
-   
-
+        srv = nova.servers.find(id=uuid)
+        try:
+    	    srv.create_image(s_name)
+        except:
+            print "Sorry exception!"
 
 
 if __name__ == "__main__":
