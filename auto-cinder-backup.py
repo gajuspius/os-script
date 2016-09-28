@@ -99,11 +99,12 @@ def main(argv):
 	        print "bck: " + uuid_bck['created'] + " - " + str(uuid_bck['order'])
 		#cinder.backups.delete(uuid_bck['id'])
 
+
     	##
 	# Create new backup
 	b_name = get_new_backup_name(volume)
-	print "Vytvaram bck: " + b_name 
-	#cinder.backups.create(volume_id='bac217fb-f45c-407c-bb21-9d419db07cbc',container=None,name=b_name,description='Auto backup',incremental=False,force=True)
+	print "Vytvaram bck: " + b_name  + " volid: " + volume
+	cinder.backups.create(volume_id=volume,container=None,name=b_name,description='Auto backup',incremental=False,force=True)
 
 
 if __name__ == "__main__":
