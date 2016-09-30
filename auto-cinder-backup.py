@@ -3,6 +3,7 @@
 
 import os
 import sys
+import argparse
 import keystoneclient.v2_0.client as ksclient
 import novaclient.client as nclient
 from cinderclient.v2 import client
@@ -13,6 +14,17 @@ from datetime import datetime
 #Max old backup count
 #
 bck_max = 5
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-f', action='store_false', default=False,
+                    dest='boolean_switch',
+                    help='Set a switch to false')
+
+parser.add_argument('-t', action='store_true', default=False,
+                    dest='boolean_switch',
+                    help='Set a switch to true')
+
+results = parser.parse_args()
 
 def get_keystone_creds():
     try:
@@ -97,14 +109,24 @@ def main(argv):
 	for uuid_bck in uuids_bck:
 	    if uuid_bck['order'] > bck_max:
 	        print "bck: " + uuid_bck['created'] + " - " + str(uuid_bck['order'])
-		#cinder.backups.delete(uuid_bck['id'])
+		try:
+		    cinder.backups.delete(uuid_bck['id'])
+		except HTTPNotFound:
+		    print "No volaco neni v poradku pri mazani" + uuid_bck['id']
 
 
     	##
 	# Create new backup
 	b_name = get_new_backup_name(volume)
-	print "Vytvaram bck: " + b_name  + " volid: " + volume
-	cinder.backups.create(volume_id=volume,container=None,name=b_name,description='Auto backup',incremental=False,force=True)
+
+        if results.boolean_switch == True:	
+	    try:
+                print "Create, bck: " + b_name  + " from volid: " + volume
+	        cinder.backups.create(volume_id=volume,container=None,name=b_name,description='Auto backup',incremental=False,force=True)
+	    except HTTPNotFound:
+	        print "Oou! exception"
+	else:
+            print "Test Create, bck: " + b_name  + " from volid: " + volume
 
 
 if __name__ == "__main__":
