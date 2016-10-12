@@ -123,7 +123,8 @@ def main(argv):
 	    try:
                 print "Create, bck: " + b_name  + " from volid: " + volume
 	        cinder.backups.create(volume_id=volume,container=None,name=b_name,description='Auto backup',incremental=False,force=True)
-	    except HTTPNotFound:
+	    except Exception as exc:
+                print exc
 	        print "Oou! exception"
 	else:
             print "Test Create, bck: " + b_name  + " from volid: " + volume
