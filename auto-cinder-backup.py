@@ -26,42 +26,36 @@ parser.add_argument('-t', action='store_true', default=False,
 
 results = parser.parse_args()
 
-def get_keystone_creds():
-    try:
-        d = {}
-        d['version'] = "2.0"
-        d['username'] = os.environ['OS_USERNAME']
-        d['password'] = os.environ['OS_PASSWORD']
-        d['auth_url'] = os.environ['OS_AUTH_URL']
-        d['tenant_name'] = os.environ['OS_TENANT_NAME']
-    except KeyError:
-        print "Credentials error. Run source user-operc.sh"
-        sys.exit(1)
-    return d
 
-def get_nova_creds():
+def get_nova_creds(old=None):
     try:
         d = {}
         d['version'] = "2.0"
         d['username'] = os.environ['OS_USERNAME']
-        d['api_key'] = os.environ['OS_PASSWORD']
         d['auth_url'] = os.environ['OS_AUTH_URL']
-        d['project_id'] = os.environ['OS_TENANT_NAME']
+
+        if not (old is None):
+            d['api_key'] = os.environ['OS_PASSWORD']
+            d['project_id'] = os.environ['OS_TENANT_NAME']
+
+        else:
+            d['password'] = os.environ['OS_PASSWORD']
+            d['project_id'] = os.environ['OS_TENANT_ID']
+
     except KeyError:
         print "Credentials error. Run source user-operc.sh"
         sys.exit(1)
 
     return d
 
-creds = get_keystone_creds()
-keystone = ksclient.Client(**creds)
 
 nvcreds = get_nova_creds()
 nova = nclient.Client(**nvcreds)
-#servers = nova.servers.list()
+#nova = nclient.Client('2.0', os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['OS_TENANT_ID'], os.environ['OS_AUTH_URL'])
 
-cicreds = get_nova_creds()
+cicreds = get_nova_creds(old=1)
 cinder = client.Client(**cicreds)
+#cinder = client.Client(os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['OS_TENANT_NAME'], os.environ['OS_AUTH_URL'])
 volumes = cinder.volumes.list()
 backups = cinder.backups.list()
 
@@ -93,8 +87,12 @@ def get_new_backup_name(id_volume):
     id_serv = cinder.volumes.find(id=id_volume)
 
     if id_serv.attachments:
-        srv_name = nova.servers.find(id=id_serv.attachments[0]['server_id'])
-	s_name= srv_name.name
+        try:
+            srv_name = nova.servers.find(id=id_serv.attachments[0]['server_id'])
+        except:
+            print "Skontroluj ci mas ok OS_TENANT_ID"
+            sys.exit(1)
+    	s_name= srv_name.name
 
     bck_name = "bck_" + s_name + "_" + datetime.now().strftime('%d%m%Y-%H%M%S')
     return bck_name
@@ -125,7 +123,6 @@ def main(argv):
 	        cinder.backups.create(volume_id=volume,container=None,name=b_name,description='Auto backup',incremental=False,force=True)
 	    except Exception as exc:
                 print exc
-	        print "Oou! exception"
 	else:
             print "Test Create, bck: " + b_name  + " from volid: " + volume
 
