@@ -13,7 +13,12 @@ from datetime import datetime
 ##
 #Max old backup count
 #
-bck_max = 5
+try:
+    os.environ['OS_MAXBACKUP']
+    bck_max = os.environ['OS_MAXBACKUP']
+except KeyError:
+    bck_max = 5
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-f', action='store_false', default=False,
@@ -28,6 +33,10 @@ results = parser.parse_args()
 
 
 def get_nova_creds(old=None):
+    if os.environ['OS_USERNAME'] == "admin":
+        print "Error: Admin credentials are not valid for backup. Use non admin credentials!!!"
+        sys.exit(1)
+
     try:
         d = {}
         d['version'] = "2.0"
@@ -51,11 +60,10 @@ def get_nova_creds(old=None):
 
 nvcreds = get_nova_creds()
 nova = nclient.Client(**nvcreds)
-#nova = nclient.Client('2.0', os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['OS_TENANT_ID'], os.environ['OS_AUTH_URL'])
 
 cicreds = get_nova_creds(old=1)
 cinder = client.Client(**cicreds)
-#cinder = client.Client(os.environ['OS_USERNAME'], os.environ['OS_PASSWORD'], os.environ['OS_TENANT_NAME'], os.environ['OS_AUTH_URL'])
+
 volumes = cinder.volumes.list()
 backups = cinder.backups.list()
 
@@ -100,31 +108,36 @@ def get_new_backup_name(id_volume):
 
 def main(argv):
     volumes = get_volumes_list()
-   
+    _dt = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+  
     for volume in volumes:
 	uuids_bck = get_volumes_backup_list(volume)
 
 	for uuid_bck in uuids_bck:
-	    if uuid_bck['order'] > bck_max:
-	        print "bck: " + uuid_bck['created'] + " - " + str(uuid_bck['order'])
-		try:
-		    cinder.backups.delete(uuid_bck['id'])
-		except HTTPNotFound:
-		    print "No volaco neni v poradku pri mazani" + uuid_bck['id']
+	    if uuid_bck['order'] > int(bck_max):
+                print _dt + ": Test Delete, bck: id:" + uuid_bck['id'] + "-" + uuid_bck['created']
+    
+                if results.boolean_switch == True:
+                    try:
+                        print _dt + ": Delete, bck: " + uuid_bck['created']
+                        cinder.backups.delete(uuid_bck['id'])
+                    except HTTPNotFound:
+                        print "No volaco neni v poradku pri mazani" + uuid_bck['id']
 
 
     	##
 	# Create new backup
 	b_name = get_new_backup_name(volume)
 
+
         if results.boolean_switch == True:	
-	    try:
-                print "Create, bck: " + b_name  + " from volid: " + volume
+            try:
+                print _dt + ": Create, bck: " + b_name  + " from volid: " + volume
 	        cinder.backups.create(volume_id=volume,container=None,name=b_name,description='Auto backup',incremental=False,force=True)
 	    except Exception as exc:
                 print exc
 	else:
-            print "Test Create, bck: " + b_name  + " from volid: " + volume
+            print _dt + ": Test Create, bck: " + b_name  + " from volid: " + volume
 
 
 if __name__ == "__main__":
