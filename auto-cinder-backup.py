@@ -4,6 +4,7 @@
 import os
 import sys
 import argparse
+import time 
 import keystoneclient.v2_0.client as ksclient
 import novaclient.client as nclient
 from cinderclient.v2 import client
@@ -88,8 +89,6 @@ def get_volumes_backup_list(id_volume):
     return bcks
 
 def get_new_backup_name(id_volume):
-    #zistim si cislo servera do ktoreho je pripojeny dany volume 
-    #ak nieje pripojeny  k serveru, dam do nazvu cislo volumu
     id_serv = None
     s_name = 'volumeid-' + id_volume
     id_serv = cinder.volumes.find(id=id_volume)
@@ -115,14 +114,17 @@ def main(argv):
 
 	for uuid_bck in uuids_bck:
 	    if uuid_bck['order'] > int(bck_max):
-                print _dt + ": Test Delete, bck: id:" + uuid_bck['id'] + "-" + uuid_bck['created']
-    
+                
                 if results.boolean_switch == True:
                     try:
                         print _dt + ": Delete, bck: " + uuid_bck['created']
                         cinder.backups.delete(uuid_bck['id'])
+                        time.sleep(4)
                     except HTTPNotFound:
                         print "No volaco neni v poradku pri mazani" + uuid_bck['id']
+                else:
+                    print _dt + ": Test Delete, bck: id:" + uuid_bck['id'] + "-" + uuid_bck['created']
+
 
 
     	##
