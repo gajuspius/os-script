@@ -20,6 +20,16 @@ try:
 except KeyError:
     bck_max = 5
 
+##
+#blacklist
+#
+try:
+    os.environ['OS_BLVOLUME']
+    bl = os.environ['OS_BLVOLUME']
+except KeyError:
+    bl = []
+
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-f', action='store_false', default=False,
@@ -71,7 +81,8 @@ backups = cinder.backups.list()
 def get_volumes_list():
     uid_volume = []
     for volume in volumes:
-        uid_volume.append(volume.id)
+        if volume.id not in bl:
+            uid_volume.append(volume.id)
 
     return uid_volume
 

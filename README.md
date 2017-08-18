@@ -32,6 +32,7 @@ export OS_IDENTITY_API_VERSION=2
 export OS_IMAGE_API_VERSION=2
 export OS_TENANT_ID='<tenant_id>'
 export OS_MAXBACKUP=2
+export OS_BLVOLUME=['<volume_id>','<volume_id>']
 ```
 
 `auto-cinder-backup.pl` without -t (true) will only print debug messages without creating or deleting backups.
