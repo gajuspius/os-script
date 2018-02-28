@@ -73,6 +73,7 @@ nvcreds = get_nova_creds()
 nova = nclient.Client(**nvcreds)
 
 cicreds = get_nova_creds(old=1)
+print cicreds
 cinder = client.Client(**cicreds)
 
 volumes = cinder.volumes.list()

@@ -4,6 +4,8 @@
 import os
 import sys
 import keystoneclient.v2_0.client as ksclient
+from keystoneauth1 import identity
+from keystoneauth1 import session
 from neutronclient.v2_0 import client
 
 
@@ -30,8 +32,17 @@ def get_active_node(uuid):
 
     return None
 
-creds = get_keystone_creds()
-neutron = client.Client(**creds)
+d = get_keystone_creds()
+auth = identity.Password(auth_url=d['auth_url'],
+                         username=d['username'],
+                         password=d['password'],
+                         project_name=d['username'],
+                         project_domain_id='default',
+                         user_domain_id='default')
+
+sess = session.Session(auth=auth)
+
+neutron = client.Client(session=sess)
 routers_list = neutron.list_routers(retrieve_all=True)
 
 def main(argv):
