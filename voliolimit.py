@@ -155,20 +155,16 @@ class IOLimitIsDown(IOLimitServiceException):
 
 class IOLimitService(object):
 
-    default_poll_deplay = 10
     WANT_V = '1.1.1'
     HAS_SEARCH_OPTS = LooseVersion(cinder_version) >= LooseVersion(WANT_V)
 
     def __init__(self, username, api_key, project_id, auth_url, tenant_id,
-                 poll_delay=None, name_prefix='auto_backup_',
-                 max_secs_gbi=None):
+                 poll_delay=None):
         super(IOLimitService, self).__init__()
         self.username = username
         self.api_key = api_key
         self.project_id = project_id
         self.auth_url = auth_url
-        self.poll_delay = poll_delay or self.default_poll_deplay
-        self.name_prefix = name_prefix
         self.iobytes = 0
         self.ioiops = 0
 
@@ -188,7 +184,6 @@ class IOLimitService(object):
                 auth_url=self._change_authurlVersion(auth_url, path='/v2.0'))
 
         self.status_msg = ''
-        self.max_secs_gbi = max_secs_gbi or 300
         if not self.HAS_SEARCH_OPTS:
             _LW('--all-tenants disabled, need cinderclient v%s', self.WANT_V)
 
@@ -286,8 +281,7 @@ class IOLimitService(object):
             failed = self._set_iolimits(data)
 
 
-        # TUTO este skontroluj co vracia failed!!!!!!!!
-        _LI('Finishd.')
+        _LI('Already finished.')
         return (servers, failed)
 
     def _set_iolimits(self,data):
@@ -336,10 +330,13 @@ class IOLimitService(object):
 
         for server in servers:
             hypervs = self.novacl.servers.get(server['server_id'])
-            server['hypervisor'] = getattr(hypervs, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
-            server['kvm_name'] =  getattr(hypervs, 'OS-EXT-SRV-ATTR:instance_name')
-            server['name'] = hypervs.name
-            libvirt_data.append(server)
+            try:
+                server['hypervisor'] = getattr(hypervs, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
+                server['kvm_name'] =  getattr(hypervs, 'OS-EXT-SRV-ATTR:instance_name')
+                server['name'] = hypervs.name
+                libvirt_data.append(server)
+            except:
+                _LE('%s user, dont have admin credential', self.username)
 
         return libvirt_data
 
@@ -349,8 +346,7 @@ def main(args):
                              api_key=args.password,
                              project_id=args.tenant_name,
                              auth_url=args.auth_url,
-                             tenant_id=args.tenant_id,
-                             max_secs_gbi=getattr(args, 'max_secs_gbi', None))
+                             tenant_id=args.tenant_id)
     if not iolimit.is_up:
         _LC('Cinder volume is ' + iolimit.iolimit_status)
         exit(1)
@@ -363,9 +359,10 @@ def main(args):
                                              iobytes=args.io_bytes,
                                              ioiops=args.io_iops)
         except IOLimitIsDown:
-            _LC('Cinder Backup is ' + iolimit.iolimit_status)
+            _LC('Cinder services is ' + iolimit.iolimit_status)
 
         if failed:
+            print "HUHU"
             exit(1)
 
     elif args.action == SERVER:
