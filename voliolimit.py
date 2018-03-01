@@ -27,6 +27,9 @@ __storages__ = {'@iscsi-01-vnet.in'}
 ALL = 'allservers'
 SERVER = 'server'
 
+_IOBYTES=12582912
+_IOIOPS=200
+
 
 _LI = _LW = _LE = _LC = _LX = None
 DEFAULT_LOG_LEVEL = logging.INFO
@@ -96,11 +99,11 @@ def get_arg_parser():
                       type=str, help="Type of volume. Available "
                       "values are: std, pro, flash. Default value is std")
 
-    iobytes = dict(dest='io_bytes',default=62914560,
+    iobytes = dict(dest='io_bytes',default=_IOBYTES,
                    metavar='<#>',
                    type=int, help='Set disk bytes sec. limit. Default value is 6291456')
 
-    ioiops = dict(dest='io_iops', default=150,
+    ioiops = dict(dest='io_iops', default=_IOIOPS,
                  metavar='<#>',
                  type=int, help='Set disk ips sec. limit. Default value is 150')
 
@@ -286,7 +289,7 @@ class IOLimitService(object):
 
     def _set_iolimits(self,data):
         libvirtdata = data
-        uri = "qemu+ssh://root@" + libvirtdata['hypervisor'] + "/system"
+        uri = "qemu+ssh://nova@" + libvirtdata['hypervisor'] + "/system"
         dev = str(self._set_device_name(libvirtdata['device']))
 
         conn = libvirt.open(uri)
@@ -316,7 +319,7 @@ class IOLimitService(object):
                                                    'write_iops_sec': 0L,
                                                    'write_iops_sec_max': 0L})
         except:
-            _LE('Failed to set iolimits for %s, %s', libvirtdata['kvm_name'], self._set_device_name(libvirtdata['device']) )
+            _LE('Failed to set iolimits for %s, %s', libvirtdata['kvm_name'], dev )
             return False
 
 
@@ -362,7 +365,6 @@ def main(args):
             _LC('Cinder services is ' + iolimit.iolimit_status)
 
         if failed:
-            print "HUHU"
             exit(1)
 
     elif args.action == SERVER:
