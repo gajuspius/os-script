@@ -1,4 +1,5 @@
 # Various python script for openstack
+##########
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain
@@ -14,7 +15,7 @@ under the License.
 
 
 ## auto-cinder-backup.pl
-
+o
 usage example (crontab):
 
 `30 23 * * * cd /home/os-script/ ; . ../tenant-openrc.sh && ./auto-cinder-backup.py -t >> /var/log/tenant-backup 2>&1`

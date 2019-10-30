@@ -3,7 +3,7 @@
 
 import os
 import sys
-import keystoneclient.v2_0.client as ksclient
+#import keystoneclient.v2_0.client as ksclient
 from keystoneauth1 import identity
 from keystoneauth1 import session
 from neutronclient.v2_0 import client
@@ -51,9 +51,9 @@ def main(argv):
 	for p in val_list:
             host = get_active_node(p['id'])
 
-	    print ("{0} - {1}".format(p['name'], host)) 
+	    print ("{0} - {1}".format(p['name'], host))
 
-	    
+
     except:
         print("Sorry exception!")
 
